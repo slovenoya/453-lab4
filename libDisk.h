@@ -19,9 +19,9 @@ int readBlock (int disk, int bNum, void *block);
 int writeBlock (int disk, int bNum, void *block);
 void closeDisk(int disk);
 #define BLOCKSIZE 256
-#define INVALID_BLOCK_SIZE -1
-#define MISC_OPEN_FILE_FAIL -2
-#define MISC_READ_FILE_FAIL -3
-#define MISC_WRITE_FILE_FAIL -4
-#define MISC_CLOSE_FILE_FAIL -5
+#define INVALID_DISK_SIZE -1
+#define MISC_OPEN_DISK_FAIL -2
+#define MISC_READ_DISK_FAIL -3
+#define MISC_WRITE_DISK_FAIL -4
+#define MISC_CLOSE_DISK_FAIL -5
 #endif

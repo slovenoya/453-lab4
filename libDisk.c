@@ -10,7 +10,7 @@
 int checkFd(int fd) {
   if (fd == -1) {
     fprintf(stderr, "Something wrong with openDisk() %s\n", strerror(errno));
-    return MISC_OPEN_FILE_FAIL;
+    return MISC_OPEN_DISK_FAIL;
   }
   return fd;
 }
@@ -26,7 +26,7 @@ int openDisk (char *filename, int nBytes) {
   int fd;
   if (nBytes < 0 || ((nBytes % BLOCKSIZE) != 0)) {
     fprintf(stderr, "Calling openDisk() with invalid block size: %d\n", nBytes);
-    return INVALID_BLOCK_SIZE;
+    return INVALID_DISK_SIZE;
   } else if (nBytes == 0) {
     fd = open(filename, O_RDWR);
     return checkFd(fd);
@@ -49,7 +49,7 @@ int readBlock (int disk, int bNum, void *block) {
   ret = pread(disk, block, BLOCKSIZE, bNum * BLOCKSIZE);
   if (ret == -1) {
     fprintf(stderr, "Encoutering error in readBlock() %s\n", strerror(errno));
-    return MISC_READ_FILE_FAIL;
+    return MISC_READ_DISK_FAIL;
   } else {
     printf("read successfully\n");
     return ret;
@@ -69,7 +69,7 @@ int writeBlock (int disk, int bNum, void *block) {
   ret = pwrite(disk, block, BLOCKSIZE, BLOCKSIZE * bNum);
   if (ret == -1) {
     fprintf(stderr, "Encountering error in writeBlock() %s\n", strerror(errno));
-    return MISC_WRITE_FILE_FAIL;
+    return MISC_WRITE_DISK_FAIL;
   } else {
     printf("write successfullly\n");
     return ret;
