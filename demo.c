@@ -21,6 +21,7 @@ int main() {
   writeBlock(dummyDisk, 0, str);
   
   int write = writeBlock(disk, 0, str);
+  printf("write return: %d, write bytes: %s\n", write, str);
   
   read = readBlock(disk, 0, str);
   printf("read return: %d, read bytes: %s\n", read, str);
