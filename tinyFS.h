@@ -11,6 +11,7 @@ typedef struct SuperBlock {
   void *inode;
   void *free_blocks;
   unsigned int magic_num;
+  unsigned int size;
 } SuperBlock;
 
 typedef struct INode {

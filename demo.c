@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "libDisk.h"
+#include "tinyFS.h"
 int main() {
   //----------libDisk----------//
   //wrong block size tests
@@ -9,7 +10,7 @@ int main() {
   openDisk("file.txt", 21);
   //correct block size tests
   int dummyDisk = 33;
-  int disk = openDisk("file.txt", 256);
+  int disk = openDisk(DEFUALT_DISK_NAME, DEFAULT_DISK_SIZE);
   printf("disk number: %d \n", disk);
   
   char str[256];
