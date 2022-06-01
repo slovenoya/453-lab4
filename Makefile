@@ -1,8 +1,10 @@
 all : libDisk.o tinyFS.o demo.o
 	gcc libDisk.o tinyFS.o demo.o -o tinyFSDemo
+	rm *.o
 
 test : libDisk.o tinyFS.o test.o
 	gcc libDisk.o tinyFS.o test.o -o tinyFSTest
+	rm *.o
 
 demo.o : demo.c
 	gcc -std=gnu99 -Wall -pedantic -c demo.c
@@ -15,6 +17,3 @@ tinyFS.o : tinyFS.h
 
 libDisk.o : libDisk.h
 	gcc -std=gnu99 -Wall -pedantic -c libDisk.c
-
-clean :
-	rm *.o

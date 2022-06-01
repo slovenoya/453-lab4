@@ -10,29 +10,17 @@ typedef int fileDescriptor;
 
 #define GET_BLOCK_LEN(TOTAL_SIZE) (TOTAL_SIZE / BLOCKSIZE)
 #define SB_MAGIC_NUM_POS 0
+#define SB_TOTAL_SIZE_POS 1
+#define SB_BIT_MAP_POS 2
 
 #define ROOT_INODE_POS 1
-#define RI_ENTRY(ENTRY_INDEX) (ENTRY_INDEX)
+#define RI_ENTRY_SIZE 16
+#define RI_ENTRY(ENTRY_INDEX) (ENTRY_INDEX * RI_ENTRY_SIZE)
+#define RI_ENTRY_INODE_BLOCK_ADD(ENTRY_INDEX) (RI_ENTRY(ENTRY_INDEX))
+#define RI_ENTRY_FILE_NAME(ENTRY_INDEX) (RI_ENTRY(ENTRY_INDEX) + sizeof(int))
+#define TOTAL_ENTRY 16
 
-
-//helper functions
-/**
- * @brief returns how many block is needed for given size. 
- * 
- * @param size size of the file. 
- * @return int number of blocks needed
- */
-int _size_to_block(int size);
-
-//functions related with super block
-/**
- * @brief initialize the disk(file descriptor), set the nBytes to be 0x0
- * 
- */
-void _init_disk(int disk, int nBytes);
-int _get_magic_number(void);
-int _get_root_inode_block_num(void);
-void* _get_bit_map(void);
+char *_get_bit_map(int block_len);
 void _set_block_free(int block);
 void _set_block_occupied(int block);
 int _get_block_status(int block);
