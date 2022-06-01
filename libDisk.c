@@ -31,11 +31,7 @@ int openDisk (char *filename, int nBytes) {
     fd = open(filename, O_RDWR);
     return checkFd(fd);
   } else {
-    int i;
-    char zero = 0x0;
-    fd = open(filename, O_RDWR | O_CREAT | O_TRUNC , S_IRWXU, S_IRWXG,S_IRWXO);
-    for (i = 0; i < nBytes; i++)
-      pwrite(fd, &zero, 1, i);
+    fd = open(filename, O_RDWR | O_CREAT , S_IRWXU);
     return checkFd(fd);
   }
 }
