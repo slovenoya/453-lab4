@@ -17,7 +17,7 @@ int main() {
 
   int fd = tfs_open("abcd");
   printf("fd: %d\n", fd);
-  fd = tfs_open("abcde");
+  fd = tfs_open("abcd");
   printf("fd: %d\n", fd);
   // char *a = calloc(1, 20);
   // int c;
