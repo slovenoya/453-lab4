@@ -110,20 +110,40 @@ int _file_exist(char *name) {
   int i;
   int inode_blk;
   int read_ret;
+  int FD;
   char root_node[BLOCKSIZE];
-  char inode[BLOCKSIZE];
   char filename[MAX_NAME_LEN + 1];
   read_ret = readBlock(fd_FS, ROOT_INODE_POS, root_node);
+  if (read_ret < 0) return read_ret;
   for (i = 0; i < TOTAL_ENTRY; i++) {
     memcpy(filename, &root_node[RI_FILE_NAME_POS(i)], MAX_NAME_LEN);
     if (strcmp(filename, name) == 0) {
       inode_blk = root_node[RI_INODE_BLOCK_POS(i)];
-      read_ret = readBlock(fd_FS, inode_blk, inode);
-      if (read_ret < 0) return read_ret;
-      return inode[INODE_DATA_BLK_POS];
+      FD = _find_FD_by_inode_pos(inode_blk);
+      if (FD == -1) {
+        return -1;
+      }
+      return FD;
     }
   }
   return 0;
+}
+
+/**
+ * @brief find the FD on inode_pos
+ * 
+ * @param inode_pos the position of inode
+ * @return int return -1 if not exist in opened file, return FD if exists. 
+ */
+int _find_FD_by_inode_pos(int inode_pos) {
+  int i;
+  Entry *entry;
+  for (i = 0; i < TOTAL_ENTRY; i++) {
+    entry = opened_file[i];
+    if (entry -> inode_blk_pos == inode_pos)
+      return entry -> FD;
+  }
+  return -1;
 }
 
 /**
@@ -167,7 +187,6 @@ fileDescriptor tfs_open(char *name) {
   //check if the file has already been created
   FD = _file_exist(name);
   if (FD > 0) {
-    
     return FD;
   }
 
@@ -189,7 +208,9 @@ fileDescriptor tfs_open(char *name) {
   opened_file[FD] = entry;                            //put entry into open file table. 
   inode[INODE_DATA_BLK_POS] = data_blk_pos;           //set data block position in root node
   root_node[RI_INODE_BLOCK_POS(FD)] = inode_blk_pos;  //set ionde block position in root node
-  memcpy(name, &root_node[RI_FILE_NAME_POS(FD)], strlen(name)); //set file name in root node
+  printf("inode ps: %d\n", inode_blk_pos);
+  printf("inode ps: %d\n", data_blk_pos);
+  memcpy(&(root_node[RI_FILE_NAME_POS(FD)]), name, strlen(name)); //set file name in root node
   disk_ret = writeBlock(fd_FS, SUPER_BLOCK_POS, super_block);
   disk_ret = writeBlock(fd_FS, ROOT_INODE_POS, root_node);
   disk_ret = writeBlock(fd_FS, inode_blk_pos, inode);

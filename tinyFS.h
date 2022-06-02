@@ -39,6 +39,8 @@ typedef struct Entry {
   fileDescriptor FD;
 } Entry;
 
+int _find_FD_by_inode_pos(int inode_pos);
+
 /**
  * @brief makes an empty TinyFS file system of size nBytes on the file named filename. 
  * File will be foramtted as moutable, all data initalized to 0x0, magic numbers setted. 
