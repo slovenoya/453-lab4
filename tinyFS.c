@@ -104,7 +104,7 @@ int tfs_unmount(void) {
  * @brief check if file with name has already been opened
  * 
  * @param name name for the file
- * @return int return 0 if no such file, negative if encounters error, return FD of the inode if it exists. 
+ * @return int return -1 if no such file or encounters error, return FD of the inode if it exists. 
  */
 int _file_exist(char *name) {
   int i;
@@ -126,7 +126,7 @@ int _file_exist(char *name) {
       return FD;
     }
   }
-  return 0;
+  return -1;
 }
 
 /**
@@ -186,7 +186,7 @@ fileDescriptor tfs_open(char *name) {
 
   //check if the file has already been created
   FD = _file_exist(name);
-  if (FD > 0) {
+  if (FD >= 0) {
     return FD;
   }
 
@@ -208,13 +208,15 @@ fileDescriptor tfs_open(char *name) {
   opened_file[FD] = entry;                            //put entry into open file table. 
   inode[INODE_DATA_BLK_POS] = data_blk_pos;           //set data block position in root node
   root_node[RI_INODE_BLOCK_POS(FD)] = inode_blk_pos;  //set ionde block position in root node
-  printf("inode ps: %d\n", inode_blk_pos);
-  printf("inode ps: %d\n", data_blk_pos);
   memcpy(&(root_node[RI_FILE_NAME_POS(FD)]), name, strlen(name)); //set file name in root node
+
+  //write the blocks
   disk_ret = writeBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+  if (disk_ret < 0) return disk_ret;
   disk_ret = writeBlock(fd_FS, ROOT_INODE_POS, root_node);
+  if (disk_ret < 0) return disk_ret;
   disk_ret = writeBlock(fd_FS, inode_blk_pos, inode);
-  
+  if (disk_ret < 0) return disk_ret;
   return FD;
 
 }
