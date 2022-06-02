@@ -1,38 +1,43 @@
 #include <time.h>
 #ifndef TINYFS_H
 #define TINYFS_H
+
 #define BLOCKSIZE 256
 #define DEFAULT_DISK_SIZE 10240
 #define DEFUALT_DISK_NAME "tinyFSDisk"
 #define MAGIC_NUM 0x5a
-#define SUPER_BLOCK_POS 0
-typedef int fileDescriptor;
+
 
 #define GET_BLOCK_LEN(TOTAL_SIZE) (TOTAL_SIZE / BLOCKSIZE)
+
+#define SUPER_BLOCK_POS 0
 #define SB_MAGIC_NUM_POS 0
-#define SB_TOTAL_SIZE_POS 1
-#define SB_BIT_MAP_POS 2
+#define SB_BLOCK_LEN_POS 1
+#define SB_AVAILABLE_BLOCK_POS 2
+#define SB_AVAILABLE_ENTRY_POS 3
+#define SB_BIT_MAP_POS 4
+#define OCCUPIED 1
+#define FREE 0
 
 #define ROOT_INODE_POS 1
-#define RI_ENTRY_SIZE 16
-#define RI_ENTRY(ENTRY_INDEX) (ENTRY_INDEX * RI_ENTRY_SIZE)
-#define RI_ENTRY_INODE_BLOCK_ADD(ENTRY_INDEX) (RI_ENTRY(ENTRY_INDEX))
-#define RI_ENTRY_FILE_NAME(ENTRY_INDEX) (RI_ENTRY(ENTRY_INDEX) + sizeof(int))
+#define MAX_NAME_LEN 15
 #define TOTAL_ENTRY 16
+#define RI_ENTRY_SIZE 16
+#define RI_INODE_BLK_SIZE 1
+#define RI_INODE_BLOCK_POS(ENTRY_INDEX) (ENTRY_INDEX * RI_ENTRY_SIZE)
+#define RI_FILE_NAME_POS(ENTRY_INDEX) (ENTRY_INDEX * RI_ENTRY_SIZE + RI_INODE_BLK_SIZE)
 
-char *_get_bit_map(int block_len);
-void _set_block_free(int block);
-void _set_block_occupied(int block);
-int _get_block_status(int block);
-int _get_free_block(void);
-int _get_FD(void);
+#define INODE_SIZE_POS 0
+#define INODE_CREAT_TIME_POS 1
+#define INODE_ACCESS_TIME_POS 5
+#define INODE_DATA_BLK_POS 9
 
-//functions related with inode
-void _init_inode(void);
-void _set_ownershipt(int inode, int ownership);
-int _get_ownership(int inode);
-void _set_create_time(int inode, time_t time);
-char* _get_create_time(int inode);
+typedef int fileDescriptor;
+
+typedef struct Entry {
+  int sys_fd;
+  fileDescriptor FD;
+} Entry;
 
 /**
  * @brief makes an empty TinyFS file system of size nBytes on the file named filename. 
@@ -113,5 +118,27 @@ int tfs_readByte(fileDescriptor FD, char *buffer);
  * @return int returns 0 on success, error code when offset out of bounds or FD is invalid. 
  */
 int tfs_seek(fileDescriptor FD, int offset);
+
+/**
+ * @brief prints the create time, last accessed time. 
+ * 
+ * @param FD file descriptor
+ */
+void tfs_stat(fileDescriptor FD);
+
+/**
+ * @brief rename the file referenced by FD to new_name
+ * 
+ * @param inode file descriptor
+ * @param new_name new name for the file
+ */
+void tfs_rename(int inode, char *new_name);
+
+/**
+ * @brief print all files in root directory, 
+ * display inode and filename of those files. 
+ * 
+ */
+void tfs_readdir(void);
 
 #endif

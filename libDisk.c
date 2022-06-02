@@ -1,4 +1,3 @@
-#include "libDisk.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -6,11 +5,13 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include "libDisk.h"
+#include "tinyFSErr.h"
 
 int checkFd(int fd) {
   if (fd == -1) {
     fprintf(stderr, "Something wrong with openDisk() %s\n", strerror(errno));
-    return MISC_OPEN_DISK_FAIL;
+    return DISK_OPEN_FAIL;
   }
   return fd;
 }
@@ -26,12 +27,12 @@ int openDisk (char *filename, int nBytes) {
   int fd;
   if (nBytes < 0 || ((nBytes % BLOCKSIZE) != 0)) {
     fprintf(stderr, "Calling openDisk() with invalid block size: %d\n", nBytes);
-    return INVALID_DISK_SIZE;
+    return DISK_INVALID_SIZE;
   } else if (nBytes == 0) {
     fd = open(filename, O_RDWR);
     return checkFd(fd);
   } else {
-    fd = open(filename, O_RDWR | O_CREAT , S_IRWXU);
+    fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
     return checkFd(fd);
   }
 }
@@ -49,9 +50,8 @@ int readBlock (int disk, int bNum, void *block) {
   ret = pread(disk, block, BLOCKSIZE, bNum * BLOCKSIZE);
   if (ret == -1) {
     fprintf(stderr, "Encoutering error in readBlock() %s\n", strerror(errno));
-    return MISC_READ_DISK_FAIL;
+    return DISK_READ_FAIL;
   } else {
-    printf("read successfully\n");
     return ret;
   }
 }
@@ -69,9 +69,8 @@ int writeBlock (int disk, int bNum, void *block) {
   ret = pwrite(disk, block, BLOCKSIZE, BLOCKSIZE * bNum);
   if (ret == -1) {
     fprintf(stderr, "Encountering error in writeBlock() %s\n", strerror(errno));
-    return MISC_WRITE_DISK_FAIL;
+    return DISK_WRITE_FAIL;
   } else {
-    printf("write successfullly\n");
     return ret;
   }
 }
@@ -86,7 +85,5 @@ void closeDisk(int disk) {
   ret = close(disk);
   if (ret == -1) {
     fprintf(stderr, "Encountering error in closeBlock() %s\n", strerror(errno));
-  } else {
-    printf("close successfully\n");
-  }
+  } 
 }
