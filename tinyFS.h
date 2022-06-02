@@ -32,6 +32,10 @@
 #define INODE_ACCESS_TIME_POS 5
 #define INODE_DATA_BLK_POS 9
 
+#define DATA_NEXT_BLK_POS 0
+#define DATA_START_POS 1
+#define DATA_SIZE 255
+
 typedef int fileDescriptor;
 
 typedef struct Entry {
@@ -131,10 +135,10 @@ void tfs_stat(fileDescriptor FD);
 /**
  * @brief rename the file referenced by FD to new_name
  * 
- * @param inode file descriptor
+ * @param FD file descriptor
  * @param new_name new name for the file
  */
-void tfs_rename(int inode, char *new_name);
+int tfs_rename(fileDescriptor FD, char *new_name);
 
 /**
  * @brief print all files in root directory, 
@@ -142,5 +146,12 @@ void tfs_rename(int inode, char *new_name);
  * 
  */
 void tfs_readdir(void);
+
+/**
+ * @brief prints the time stamps for the file
+ * 
+ * @param FD 
+ */
+void tfs_stat(fileDescriptor FD);
 
 #endif

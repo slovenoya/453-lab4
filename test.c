@@ -4,6 +4,8 @@
 #include "tinyFS.h"
 #include "libDisk.h"
 int main() {
+
+
   int mkfile = tfs_mkfs(DEFUALT_DISK_NAME, DEFAULT_DISK_SIZE);
   int mount = tfs_mount(DEFUALT_DISK_NAME);
   int unmount = tfs_unmount();
@@ -17,19 +19,23 @@ int main() {
 
   int fd = tfs_open("abcd");
   printf("fd: %d\n", fd);
+  fd = tfs_open("abcd");
+  printf("fd: %d\n", fd);
   fd = tfs_open("abcde");
   printf("fd: %d\n", fd);
-  // char *a = calloc(1, 20);
-  // int c;
-  // a[0] = 1;
-  // a[1] = 1;
-  // a[2] = 1;
-  // a[3] = 1;
-  // a[5] = 1;
-  // memcpy(&c, a, sizeof(int));
-  // printf("%x\n", c); 
-  // memcpy(&c, a+1, sizeof(int));
-  // printf("%x\n", c); 
-  // free(a);
+  fd = tfs_close(0);
+  printf("fd_close: %d\n", fd);
+  fd = tfs_close(0);
+  printf("fd_close: %d\n", fd);
+  fd = tfs_close(1);
+  printf("fd_close: %d\n", fd);
+  fd = tfs_open("abcd");
+  printf("fd: %d\n", fd);
+  // fd = tfs_open("abcd");
+  // printf("fd: %d\n", fd);
+  // fd = tfs_open("abcde");
+  // printf("fd: %d\n", fd);
+
+  tfs_unmount();
   return 0;
 }
