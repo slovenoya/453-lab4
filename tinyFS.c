@@ -12,7 +12,7 @@
 #define CALLOC_ERR -1
 #define OVERHEAD 2
 int fd_FS = -1; // file descriptor for current mounted file system. 
-Entry **entry_table;
+Entry **opened_file;
 
 void _init_disk(int nBytes) {
   int i;
@@ -32,14 +32,14 @@ void* call_calloc(int size) {
   }
 }
 
-void _free_entry_table(Entry **entry_table) {
+void _free_entries(Entry **opened_file) {
   int i;
   for (i = 0; i < TOTAL_ENTRY; i++) {
-    if (entry_table[i] != NULL) {
-      free(&entry_table[i]);
+    if (opened_file[i] != NULL) {
+      free(&opened_file[i]);
     }
   }
-  free(entry_table);
+  free(opened_file);
 }
 
 int tfs_mkfs(char *filename, int nBytes) {
@@ -87,14 +87,14 @@ int tfs_mount(char *filename) {
   if (super_block[SB_MAGIC_NUM_POS] != MAGIC_NUM) {return TFS_INVALID_FS;}
   blk_len = super_block[SB_BLOCK_LEN_POS];
 
-  entry_table = call_calloc(sizeof(void*) * blk_len);
+  opened_file = call_calloc(sizeof(void*) * blk_len);
   fd_FS = temp_fd;
   return 0;
 }
 
 int tfs_unmount(void) {
   if (fd_FS == -1) {return TFS_NO_FS_TO_UNMOUNT;}
-  _free_entry_table(entry_table);
+  _free_entries(opened_file);
   closeDisk(fd_FS);
   fd_FS = -1;
   return 0;
@@ -126,34 +126,74 @@ int _file_exist(char *name) {
   return 0;
 }
 
+/**
+ * @brief find a free block by super block's bitmap, then mark the free block occupied
+ * 
+ * @param super_block super block
+ * @return int index of the free block on success, -1 on fail. 
+ */
+int _find_free_block(char *super_block) {
+  int i;
+  int blk_len;
+  blk_len = super_block[SB_BLOCK_LEN_POS];
+  for (i = 0; i < blk_len; i++) {
+    if (super_block[SB_BIT_MAP_POS + i] == FREE) {
+      super_block[SB_BIT_MAP_POS + i] = OCCUPIED;
+      return i;
+    }
+  }
+  return -1;
+}
+
 fileDescriptor tfs_open(char *name) {
   fileDescriptor FD;
-  char root_node[BLOCKSIZE];
-  char super_block[BLOCKSIZE];
-  int read_ret;
-  int available_entry;
-  int available_block;
+  Entry *entry;
+  char root_node[BLOCKSIZE];  //root node for entries
+  char super_block[BLOCKSIZE];//super block
+  char inode[BLOCKSIZE] = {0};
+  int disk_ret;
+  int available_entry;//number of free entries
+  int available_block;//number of free blocks
+  int data_blk_pos; //index for data block
+  int inode_blk_pos;//index for inode block
 
   //check file name length first
   if (strlen(name) > MAX_NAME_LEN) return TFS_EXCEED_NAME_LEN_MAX;
 
   //read root node
-  read_ret = readBlock(fd_FS, ROOT_INODE_POS, root_node);
-  if (read_ret < 0) return read_ret;
+  disk_ret = readBlock(fd_FS, ROOT_INODE_POS, root_node);
+  if (disk_ret < 0) return disk_ret;
 
-  //check if the file has already been opened
+  //check if the file has already been created
   FD = _file_exist(name);
-  if (FD > 0) return FD;
+  if (FD > 0) {
+    
+    return FD;
+  }
 
-  //file hasn't been opened yet
-  read_ret = readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
-  if (read_ret < 0) return read_ret;
+  //file hasn't been created yet
+  disk_ret = readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+  if (disk_ret < 0) return disk_ret;
   //check if there is enough space. 
   available_block = super_block[SB_AVAILABLE_BLOCK_POS];
   available_entry = super_block[SB_AVAILABLE_ENTRY_POS];
   if (available_entry == 0) return TFS_NO_AVAILABLE_ENTRY;
   if (available_block < 2) return TFS_NO_AVAILABLE_BLOCK;
-  //
+  //proceed with enough space. 
+  entry = call_calloc(sizeof(void*));
+  inode_blk_pos = _find_free_block(super_block);
+  data_blk_pos = _find_free_block(super_block);
+  entry -> inode_blk_pos = inode_blk_pos;
+  FD = TOTAL_ENTRY - available_entry;
+  entry -> FD = FD;                                  
+  opened_file[FD] = entry;                            //put entry into open file table. 
+  inode[INODE_DATA_BLK_POS] = data_blk_pos;           //set data block position in root node
+  root_node[RI_INODE_BLOCK_POS(FD)] = inode_blk_pos;  //set ionde block position in root node
+  memcpy(name, &root_node[RI_FILE_NAME_POS(FD)], strlen(name)); //set file name in root node
+  disk_ret = writeBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+  disk_ret = writeBlock(fd_FS, ROOT_INODE_POS, root_node);
+  disk_ret = writeBlock(fd_FS, inode_blk_pos, inode);
+  
   return FD;
 
 }

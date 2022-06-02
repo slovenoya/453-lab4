@@ -35,7 +35,7 @@
 typedef int fileDescriptor;
 
 typedef struct Entry {
-  int sys_fd;
+  int inode_blk_pos;
   fileDescriptor FD;
 } Entry;
 

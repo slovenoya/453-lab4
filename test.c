@@ -15,7 +15,10 @@ int main() {
   printf("mkf: %d, mount: %d, unmount: %d\n", mkfile, mount, unmount);
   mount = tfs_mount(DEFUALT_DISK_NAME);
 
-  tfs_open("abcd");
+  int fd = tfs_open("abcd");
+  printf("fd: %d\n", fd);
+  fd = tfs_open("abcd");
+  printf("fd: %d\n", fd);
   // char *a = calloc(1, 20);
   // int c;
   // a[0] = 1;
