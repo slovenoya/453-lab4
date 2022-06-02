@@ -150,6 +150,7 @@ int _find_FD_by_inode_pos(int inode_pos) {
   Entry *entry;
   for (i = 0; i < TOTAL_ENTRY; i++) {
     entry = opened_file[i];
+    if (entry == NULL) return -1;
     if (entry -> inode_blk_pos == inode_pos)
       return entry -> FD;
   }
@@ -298,5 +299,7 @@ void tfs_stat(fileDescriptor FD) {
 // }
 
 // void tfs_rename(char* old, char* new){
-
+//   int ret;
+//   ret = rename(old,new);
+//   return;    
 // }
