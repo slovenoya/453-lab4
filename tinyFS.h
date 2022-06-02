@@ -154,4 +154,7 @@ void tfs_readdir(void);
  */
 void tfs_stat(fileDescriptor FD);
 
+
+void _print_time(int time);
+
 #endif

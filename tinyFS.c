@@ -291,3 +291,12 @@ void tfs_readdir() {
 void tfs_stat(fileDescriptor FD) {
 
 }
+
+// void _print_time(int time){
+//   tOut = (str)time;
+//   printf(time);
+// }
+
+// void tfs_rename(char* old, char* new){
+
+// }
