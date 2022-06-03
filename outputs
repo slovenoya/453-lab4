@@ -1,0 +1,139 @@
+create a file system with default disk name and default size, no error message
+
+mount file system with invalid file, error message
+file given is not a valid file system
+
+mount the file system with default name, no error message
+
+disk image: //......................................
+
+open file on the disk, no error
+fd: 0
+ created time
+ Fri Jun  3 16:47:24 2022
+ last accessed time
+ Fri Jun  3 16:47:24 2022
+
+disk image: ////....................................
+
+open another file on the disk, no error
+fd: 1
+ created time
+ Fri Jun  3 16:47:25 2022
+ last accessed time
+ Fri Jun  3 16:47:25 2022
+
+disk image: //////..................................
+
+open another file on the disk, no error
+fd: 2
+ created time
+ Fri Jun  3 16:47:26 2022
+ last accessed time
+ Fri Jun  3 16:47:26 2022
+
+disk image: ////////................................
+
+open another file on the disk, no error
+fd: 3
+ created time
+ Fri Jun  3 16:47:27 2022
+ last accessed time
+ Fri Jun  3 16:47:27 2022
+
+disk image: //////////..............................
+
+note their create time and access time are all changed
+
+print all directories: 
+inode: 2, filename: file1.txt
+inode: 4, filename: file2.txt
+inode: 6, filename: file3.txt
+inode: 8, filename: file4.txt
+
+rename file1 to file1(1)
+print directories
+inode: 2, filename: file1(1)
+inode: 4, filename: file2.txt
+inode: 6, filename: file3.txt
+inode: 8, filename: file4.txt
+
+write abcd to file1, no errors
+
+read from disk, no errors
+print the first byte we read: a
+
+read another byte, no errors
+print the second byte we read: b
+
+seek position 0, no errors
+read a byte from position 0
+print the byte we read: a
+
+read another byte 
+print the byte: b
+
+delete file2
+inode: 2, filename: file1(1)
+inode: 6, filename: file3.txt
+inode: 8, filename: file4.txt
+
+disk image: ////..////..............................
+
+delete file3
+inode: 2, filename: file1(1)
+inode: 8, filename: file4.txt
+
+disk image: ////....//..............................
+
+delete file4
+inode: 2, filename: file1(1)
+
+disk image: ////....................................
+
+delete file4 again, error occurs: 
+invalid file descriptor
+
+try to mount current file system again, error occurs: 
+already mounted a file system
+
+unmount current file system
+
+unmount again, error occurs:
+no mounted file system to be unmount
+
+mount the file system back
+
+print directories in the disk
+inode: 2, filename: file1(1)
+
+open existed file on disk
+
+read byte from the file
+print the byte: a
+
+read another byte from the file
+print the byte: b
+
+read another byte from the file
+print the byte: c
+
+read another byte from the file
+print the byte: d
+
+ open file names 1.txt 2.txt 3.txt 4.txtinode: 2, filename: file1(1)
+inode: 4, filename: 1.txt
+inode: 6, filename: 2.txt
+inode: 8, filename: 3.txt
+inode: 10, filename: 4.txt
+
+disk image: ////////////............................
+
+delete 2.txt
+disk image: //////..////............................
+
+defragmentation
+
+disk image: //............................./////////
+
+unmount the file system

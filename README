@@ -1,7 +1,23 @@
 Team: Ryan Zhang, Johnson He
+
 How well The FS works: 
+  FS's basic and additional functions all works and has been tested. 
 
 Additional Functions: 
+  1. timestamp implemented
+  2. renaming files and readdir implemented. 
+  3. fragmentation display and defragmentation. 
+
+usage: 
+  make
+  ./tinyFSDemo
 
 Limitations and Bugs:
-
+  No bugs founded yet. 
+  Limitations: 
+    1. error message related to system file descriptors are generic, could cause problems for debugging. 
+    2. file name is at most 15 characters. 
+    3. only 16 files are allowed to be stored on disk or opened at the same time. 
+    4. open files that already been opened will not provide new FD, but existed FD. 
+    5. do not have File Descriptor for stdin or stderr. 
+    6. inode number is not contiguous but assigned by its block index. 

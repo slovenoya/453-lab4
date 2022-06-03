@@ -229,6 +229,7 @@ fileDescriptor tfs_open(char *name) {
     entry -> inode_blk_pos = _find_inode_pos_by_name(root_node, name);
     super_block[SB_AVAILABLE_ENTRY_POS] = super_block[SB_AVAILABLE_ENTRY_POS] - 1;
     opened_file[FD] = entry;
+    tfs_seek(FD, 0);
     return FD;
   }
 
@@ -256,6 +257,8 @@ fileDescriptor tfs_open(char *name) {
   if (disk_ret < 0) return disk_ret;
   disk_ret = writeBlock(fd_FS, inode_blk_pos, inode);
   if (disk_ret < 0) return disk_ret;
+  _write_time(inode, INODE_CREAT_TIME_POS, inode_blk_pos);
+  _write_time(inode, INODE_ACCESS_TIME_POS, inode_blk_pos);
   return FD;
 }
 
@@ -290,6 +293,7 @@ int tfs_write(fileDescriptor FD, char *buffer, int size) {
   int write_size;
   char super_block[BLOCKSIZE];
   char data_node[BLOCKSIZE] = {0};
+  char inode[BLOCKSIZE];
   blk_needed = size / DATA_SIZE;
   blk_to_write = blk_needed + 1;
 
@@ -300,13 +304,17 @@ int tfs_write(fileDescriptor FD, char *buffer, int size) {
   disk_ret = readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
   if(disk_ret < 0) return disk_ret;
 
+    //read super block and root inode
+  disk_ret = readBlock(fd_FS, opened_file[FD] -> inode_blk_pos, inode);
+  if(disk_ret < 0) return disk_ret;
+
   //figure out if there is enough room for the write
   if(super_block[SB_AVAILABLE_BLOCK_POS] < blk_needed) return TFS_NO_AVAILABLE_BLOCK;
 
   //there is enough room, write into blocks that is available
   for (i = 0; i < blk_to_write; i++) {
     //determine the current block position in disk
-    if (i == 0) current_data_blk = opened_file[FD] -> inode_blk_pos; 
+    if (i == 0) current_data_blk = inode[INODE_DATA_BLK_POS]; 
     else current_data_blk = _find_free_block(super_block);
     assert(current_data_blk >= 0);
     //determine the size to write
@@ -327,6 +335,7 @@ int tfs_write(fileDescriptor FD, char *buffer, int size) {
   //update super block and root node to disk
   disk_ret = writeBlock(fd_FS, SUPER_BLOCK_POS, super_block);
   if (disk_ret < 0) return disk_ret;
+  _write_time(inode, INODE_ACCESS_TIME_POS, opened_file[FD] -> inode_blk_pos);
   return 0;
 }
 
@@ -351,32 +360,25 @@ int tfs_delete(fileDescriptor FD) {
   disk_ret = readBlock(fd_FS, next_node_pos, root_node);
   if (disk_ret < 0) return disk_ret;
 
-  do {
-    cur_node_pos = next_node_pos;
-    //read from disk
-    disk_ret = readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
-    if (disk_ret < 0) return disk_ret;
-    disk_ret = readBlock(fd_FS, ROOT_INODE_POS, root_node);
-    if (disk_ret < 0) return disk_ret;
+  cur_node_pos = next_node_pos;
+  //read from disk
+  disk_ret = readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+  if (disk_ret < 0) return disk_ret;
+  disk_ret = readBlock(fd_FS, ROOT_INODE_POS, root_node);
+  if (disk_ret < 0) return disk_ret;
 
-    //delete file from opened file table
-    free(opened_file[FD]);
-    opened_file[FD] = NULL;
+  //delete data from disk
+  next_node_pos = cur_node[DATA_NEXT_BLK_POS];
+  writeBlock(fd_FS, cur_node_pos, empty_blk);
 
-    //delete data from disk
-    next_node_pos = cur_node[DATA_NEXT_BLK_POS];
-    writeBlock(fd_FS, cur_node_pos, empty_blk);
-
-    //update bitmap
-    super_block[SB_BIT_MAP_POS + cur_node_pos] = FREE;
-    //update available block position
-    super_block[SB_AVAILABLE_BLOCK_POS] = super_block[SB_AVAILABLE_BLOCK_POS] + 1;
-
-  } while (next_node_pos != 0);
+  //update bitmap
+  super_block[SB_BIT_MAP_POS + cur_node_pos] = FREE;
+  //update available block position
+  super_block[SB_AVAILABLE_BLOCK_POS] = super_block[SB_AVAILABLE_BLOCK_POS] + 1;
   
   //update root node
   for (i = 0; i< RI_ENTRY_SIZE; i++) {
-    root_node[RI_INODE_BLOCK_POS(i)] = 0;
+    root_node[RI_INODE_BLOCK_POS(FD) + i] = 0;
   }
   disk_ret = writeBlock(fd_FS, ROOT_INODE_POS, root_node);
   if (disk_ret < 0) return disk_ret;
@@ -388,32 +390,154 @@ int tfs_delete(fileDescriptor FD) {
 
   //update bitmap
   super_block[SB_BIT_MAP_POS + inode_pos] = FREE;
+  super_block[SB_BIT_MAP_POS + inode_pos + 1] = FREE;
   disk_ret = writeBlock(fd_FS, SUPER_BLOCK_POS, super_block);
   if (disk_ret < 0) return disk_ret;
+
+  //delete file from opened file table
+  free(opened_file[FD]);
+  opened_file[FD] = NULL;
 
   return 0;
 }
 
 int tfs_readByte(fileDescriptor FD, char *buffer) {
+  int disk_ret;
+  int offset;
+  int data_blk;
+  char read;
+  char data[BLOCKSIZE];
+  char inode[BLOCKSIZE];
+
+  //return errno if FD not valid
   if (opened_file[FD] == NULL) return TFS_INVALID_FD;
+
+  //read inode from disk
+  disk_ret = readBlock(fd_FS, opened_file[FD] -> inode_blk_pos, inode);
+  if (disk_ret < 0) return disk_ret;
+
+  offset = inode[INODE_POINTER_POS];
+  inode[INODE_POINTER_POS] = offset + 1;
+  data_blk = inode[INODE_DATA_BLK_POS];
+
+  //read data
+  disk_ret = readBlock(fd_FS, data_blk, data);
+  if (disk_ret < 0) return disk_ret;
+
+  read = data[DATA_START_POS + offset];
+  memcpy(buffer, &read, sizeof(char));
+
+  //write inode
+  disk_ret = writeBlock(fd_FS, opened_file[FD] -> inode_blk_pos, inode);
+  if (disk_ret < 0) return disk_ret;
+
   return 0;
 }
 
 int tfs_seek(fileDescriptor FD, int offset) {
+  int disk_ret;
+  char inode[BLOCKSIZE];
+
   if (opened_file[FD] == NULL) return TFS_INVALID_FD;
+
+  disk_ret = readBlock(fd_FS, opened_file[FD] -> inode_blk_pos, inode);
+  if (disk_ret < 0) return disk_ret;
+  inode[INODE_POINTER_POS] = offset;
+  disk_ret = writeBlock(fd_FS, opened_file[FD] -> inode_blk_pos, inode);
+  if (disk_ret < 0) return disk_ret;
+  _write_time(inode, INODE_ACCESS_TIME_POS, opened_file[FD] -> inode_blk_pos);
   return 0;
 }
 
+void tfs_defragmentation() {
+  char super_block[BLOCKSIZE];
+  int blk_occupied;
+  int total_blk;
+  int i;
+  readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+  total_blk = super_block[SB_BLOCK_LEN_POS];
+  blk_occupied = total_blk - super_block[SB_AVAILABLE_BLOCK_POS];
+  blk_occupied = blk_occupied - 2;
+  for (i = 0; i < blk_occupied*2;i++) {
+    super_block[SB_BIT_MAP_POS + total_blk - i] = OCCUPIED;
+    super_block[SB_BIT_MAP_POS + i + 2] = FREE;
+  }
+  writeBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+}
+
 int tfs_rename(fileDescriptor FD, char *new_name) {
+  int disk_ret;
+  char root_node[BLOCKSIZE];
+
   if (strlen(new_name) > MAX_NAME_LEN) return TFS_EXCEED_NAME_LEN_MAX;
   if (opened_file[FD] == NULL) return TFS_INVALID_FD;
+
+  disk_ret = readBlock(fd_FS, ROOT_INODE_POS, root_node);
+  if (disk_ret < 0) return disk_ret;
+
+  memcpy(&root_node[RI_FILE_NAME_POS(FD)], new_name, RI_ENTRY_SIZE - 1);
+
+  disk_ret = writeBlock(fd_FS, ROOT_INODE_POS, root_node);
+  if (disk_ret < 0) return disk_ret;
+
   return 0;
 }
 
 void tfs_readdir() {
+  int i;
+  char root_node[BLOCKSIZE];
+  char entry[RI_ENTRY_SIZE];
 
+  readBlock(fd_FS, ROOT_INODE_POS, root_node);
+
+  for (i = 0 ; i < TOTAL_ENTRY; i++) {
+    if (root_node[RI_INODE_BLOCK_POS(i)] != 0){
+      memcpy(entry, &root_node[RI_INODE_BLOCK_POS(i)], RI_ENTRY_SIZE);
+      printf("inode: %d, filename: %s\n", (int)entry[0], &entry[1]);
+    }
+  }
+}
+
+void _write_time(char *inode, int position, int inode_pos) {
+  time_t now;
+  time(&now);
+  localtime(&now); 
+  memcpy(&inode[position], &now, sizeof(time_t));
+  writeBlock(fd_FS, inode_pos, inode);
+}
+
+time_t _get_time(char *inode, int position) {
+  time_t time;
+  memcpy(&time, &inode[position], sizeof(time_t));
+  return time;
 }
 
 void tfs_stat(fileDescriptor FD) {
-
+  time_t access;
+  time_t create;
+  if (opened_file[FD] == NULL) fprintf(stderr, "INVALID FD\n");
+  char inode[BLOCKSIZE];
+  readBlock(fd_FS, opened_file[FD] -> inode_blk_pos, inode);
+  access = _get_time(inode, INODE_CREAT_TIME_POS);
+  create = _get_time(inode, INODE_ACCESS_TIME_POS);
+  printf("fd: %d\n created time\n %s last accessed time\n %s", FD, ctime(&create), ctime(&access));
 }
+
+void tfs_display_framents() {
+  char super_block[BLOCKSIZE];
+  int i;
+  readBlock(fd_FS, SUPER_BLOCK_POS, super_block);
+  printf("\ndisk image: ");
+  for (i = 0; i < super_block[SB_BLOCK_LEN_POS]; i++) {
+    if (super_block[SB_BIT_MAP_POS + i] == FREE) {
+      printf(".");
+    } else {
+      printf("/");
+    }
+  }
+  printf("\n");
+}
+
+
+
+

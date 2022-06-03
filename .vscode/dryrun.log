@@ -1,9 +1,11 @@
-make --dry-run --always-make --keep-going --print-directory
-make: Entering directory '/home/rz/Documents/CS/OS/csc453/lab4'
+make --dry-run --keep-going --print-directory
+make: Entering directory `/Users/ryan/Documents/Computer Science/OS/CPE453/program4'
 gcc -std=gnu99 -Wall -pedantic -c libDisk.c
+ 
 gcc -std=gnu99 -Wall -pedantic -c tinyFS.c
 gcc -std=gnu99 -Wall -pedantic -c demo.c
-gcc libDisk.o tinyFS.o demo.o -o tinyFSDemo
+gcc -std=gnu99 -Wall -pedantic -c tinyFSErr.c
+gcc libDisk.o tinyFS.o demo.o tinyFSErr.o -o tinyFSDemo
 rm *.o
-make: Leaving directory '/home/rz/Documents/CS/OS/csc453/lab4'
+make: Leaving directory `/Users/ryan/Documents/Computer Science/OS/CPE453/program4'
  

@@ -25,10 +25,10 @@
 #define RI_INODE_BLOCK_POS(ENTRY_INDEX) (ENTRY_INDEX * RI_ENTRY_SIZE)
 #define RI_FILE_NAME_POS(ENTRY_INDEX) (ENTRY_INDEX * RI_ENTRY_SIZE + RI_INODE_BLK_SIZE)
 
-#define INODE_SIZE_POS 0
-#define INODE_CREAT_TIME_POS 1
-#define INODE_ACCESS_TIME_POS 5
-#define INODE_DATA_BLK_POS 9
+#define INODE_DATA_BLK_POS 0
+#define INODE_CREAT_TIME_POS 4
+#define INODE_ACCESS_TIME_POS 20
+#define INODE_POINTER_POS 30
 
 #define DATA_NEXT_BLK_POS 0
 #define DATA_START_POS 1
@@ -40,6 +40,8 @@ typedef struct Entry {
   int inode_blk_pos;
   fileDescriptor FD;
 } Entry;
+
+void _write_time(char *inode, int position, int inode_pos);
 
 int _find_FD_by_inode_pos(int inode_pos);
 /**
@@ -122,6 +124,10 @@ int tfs_readByte(fileDescriptor FD, char *buffer);
  */
 int tfs_seek(fileDescriptor FD, int offset);
 
+void tfs_display_framents();
+
+void tfs_defragmentation();
+
 /**
  * @brief prints the create time, last accessed time. 
  * 
@@ -150,6 +156,7 @@ void tfs_readdir(void);
  * @param FD 
  */
 void tfs_stat(fileDescriptor FD);
+
 
 
 #endif
