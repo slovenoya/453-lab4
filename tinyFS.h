@@ -6,8 +6,6 @@
 #define DEFAULT_DISK_SIZE 10240
 #define DEFUALT_DISK_NAME "tinyFSDisk"
 #define MAGIC_NUM 0x5a
-
-
 #define GET_BLOCK_LEN(TOTAL_SIZE) (TOTAL_SIZE / BLOCKSIZE)
 
 #define SUPER_BLOCK_POS 0
@@ -44,7 +42,6 @@ typedef struct Entry {
 } Entry;
 
 int _find_FD_by_inode_pos(int inode_pos);
-
 /**
  * @brief makes an empty TinyFS file system of size nBytes on the file named filename. 
  * File will be foramtted as moutable, all data initalized to 0x0, magic numbers setted. 
@@ -154,7 +151,5 @@ void tfs_readdir(void);
  */
 void tfs_stat(fileDescriptor FD);
 
-
-void _print_time(int time);
 
 #endif

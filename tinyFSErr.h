@@ -14,4 +14,6 @@
 #define TFS_CLOSE_FILE_NOT_OPENED -11
 #define TFS_INVALID_FD -12
 
+void PRINT_ERR(int errno);
+
 #endif
